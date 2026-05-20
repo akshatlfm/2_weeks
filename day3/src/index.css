@@ -1,0 +1,46 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #121212;
+  color: #ffffff;
+  font-family: sans-serif;
+}
+
+.header {
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 2rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.card {
+  background-color: blue;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-name {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-city {
+  font-size: 0.9rem;
+  color: #aaaaaa;
+}
