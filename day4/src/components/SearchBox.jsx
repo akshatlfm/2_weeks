@@ -1,4 +1,3 @@
-   
     function SearchBox({query,setQuery}){
       
         function handleChange(event){
