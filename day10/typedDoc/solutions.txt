@@ -1,0 +1,233 @@
+q1.
+    vanilla llm have 2 major issues:-
+        i. they are trained on data till a fixed date, they dont have latest info
+        ii. they hallucinate when asked on data which they  dont have 
+    RAGs solve this issue it takes a data  src(in document form) and store them in embeddings form
+    and then RAG do retireval ie it takes user query and finnd similar embeddings from db which 
+    solve both issues
+
+
+q2.
+    a. embeddings are the numerical vector that are based on context
+    b. vector similarity is the process of finding the most similar vectors i.e sentences which have
+        similar meaning , common technique is Cosine similarity
+    c. it is the size of the sentence which is taken to form a embedding
+    d. chunk overlap is the process which we do to make sure that context is not lost bw different
+        chunks
+    e. top k retireval is the process of finding the 'k' most same embeddings based on the user query
+
+
+q3.
+    chunk size is too large which means retireval will not be efficient since a single chunk contains
+    too much info also there is no overlap which means that context will be lost bw chunks as well
+
+    solution -> decrease the  chunnk size to - 400 around and overlap to be around 50
+
+
+q4.
+        import chromadb
+        from sentence_transformers import SentenceTransformer
+
+        
+        documents = [
+            "My name is Akshat",
+            "Akshat love Football",
+            "Akshat works at QuinType."
+        ]
+
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        embeddings = model.encode(documents).tolist()
+
+        client = chromadb.Client()
+
+        collection = client.create_collection(name="mydb")
+
+        collection.add(
+            ids=["e1", "e2", "e3"],
+            documents=documents,
+            embeddings=embeddings
+        )
+
+        query = "Where does Akshat works?"
+
+        query_embedding = model.encode(query).tolist()
+
+        results = collection.query(
+            query_embeddings,
+            n_results=2
+        )
+
+
+q5.
+    This failure is called hallucination,
+    i. retireval - moderate chunk size,better overlap size,increase the size of k retireval
+    ii. prompt - use strict prompt to find answer from the document only
+    iii. evaluation - give citations
+
+
+q6.
+    LangChain Expression Language is the way to make the  workflows  by connecting diff components
+    like prompt,llm,parser into a pipeline using a spexial  operator that is '|' , it passes the
+    output of one component to next component as innput, imp thing is that all the components 
+    should be Runnable that is all should have a property called .invoke()
+
+
+q7.
+        from langchain_openai import ChatOpenAI
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_core.output_parsers import StrOutputParser
+
+        prompt = ChatPromptTemplate.from_template(
+            "Write a one-sentence for this: {topic}"
+        )
+
+        model = ChatOpenAI(model="gpt-5.0-nano")
+
+        parser = StrOutputParser()
+
+        chain = prompt | model | parser
+
+        response = chain.invoke({"topic": "electric scooters"})
+        print(response)
+
+
+q8.
+        from pydantic import BaseModel, Field
+        from langchain_openai import ChatOpenAI
+        from langchain_core.prompts import ChatPromptTemplate
+
+        class MovieReview(BaseModel):
+            title: str = Field(description="Movie title")
+            rating: int = Field(
+                ge=1,
+                le=10,
+                description="Movie rating from 1 to 10"
+            )
+            one_line_review: str = Field(
+                description="one-line movie review"
+            )
+
+        model = ChatOpenAI(model="gpt-5.0-nano")
+
+        structured_model = model.with_structured_output(MovieReview)
+
+        chain = prompt | structured_model
+
+    
+q9.
+    a. PyPDFLoader
+    b. RecursiveCharacterTextSplitter
+    c. HuggingFaceEmbeddings
+    d. Chroma
+    e. VectorStoreRetriever
+    f. ChatPromptTemplate + ChatOpenAI + StrOutputParser
+
+
+q10.
+    A chain is a linear workflow where each step runs in a fixed order.
+    A graph allows branching, loops, and decision-making, so the next step may depend on conditions.
+
+    graph has conditional branching(routing) and looping which chainn doesnt have.
+
+
+q11.
+    State : shared data object which is accessed by every node.
+    Node : they are the process that perform task like generation,llm call,etc.
+    Edges : connection bw nodes is edge it defines the flow.
+    Conditional Edges : they are decision-based edge that choose the node depending upon condition
+
+    the state flows from Start to End nodes and in bw they are accessed by multiple nodes depending
+    upon the flow and each node after performing the task updates the changes back to state
+
+
+q12.
+        from typing import TypedDict
+        from langgraph.graph import StateGraph, START, END
+
+        class GraphState(TypedDict):
+            messages: list
+
+        def greet(state: GraphState):
+            return {
+                "messages": state["messages"] + ["Hello!"]
+            }
+
+        def farewell(state: GraphState):
+            return {
+                "messages": state["messages"] + ["Goodbye!"]
+            }
+
+        graph = StateGraph(GraphState)
+
+        graph.add_node("greet", greet)
+        graph.add_node("farewell", farewell)
+        graph.add_edge(START, "greet")
+        graph.add_edge("greet", "farewell")
+        graph.add_edge("farewell", END)
+
+        compiled_graph = graph.compile()
+
+        result = compiled_graph.invoke({
+            "messages": []
+        })
+
+        print(result)
+
+
+q13.
+    state shape:
+        it will contain user_query,messages_list(conversationn history), tool_required(bool),
+        tool_result(str) , final response and count(to protect from infinite tool calls)
+    
+    nodes:  
+        we will have an agent node that will decide what to do 
+        we will also have a tool node that will use the tool to perform task which agent couldnt do
+        ofc a start and end node 
+    
+    conditional_eddge: 
+        it is the most imp edge here if agent is not able to produce content and demands the tool_call
+        and count is less than equal to 5(we are ssuming 5 is the limit) then we will make the tool_call 
+        and move to tool_node otherwise to end node
+    
+    to overcome the infinte loop challenge we have count in state we will set a limit  of 5 and in 
+    route function we will check if the count<=5  then only make a tool call othherwise go to end node
+
+
+q14.
+    a. MCP solves the problem of connecting AI models to external tools and data sources in a standardized
+     way instead of building separate custom integrations for every app or API.
+    b. host -> it is the environment which have client in int
+       client -> it connects the host to server 
+       server -> it provides the functionalities to model 
+    c. MCP server can expose tools, which are executable actions like searching or running code.
+       It can also expose resources, which are data sources or files the model can read,
+       prompts, which are reusable prompt templates or instructions
+
+
+q15. 
+    MCP Tool -> they are executable actions or say functions which perform some task
+    MCP Resorces -> it is the data that ai model can read or access
+
+
+q16.
+        from mcp.server.fastmcp import FastMCP
+
+        mcp = FastMCP("WordCountServer")
+
+        @mcp.tool()
+        def word_count(text: str) -> int:
+            """
+            Count the number of words in the given text.
+            """
+            return len(text.split())
+
+        if __name__ == "__main__":
+            mcp.run()
+
+q17.
+    i. MCP gives the standardized way to connnect to external tools instead of making custom code 
+        for each feature
+    ii. MCP also offers data resources,prompts not only tools 
+
+
